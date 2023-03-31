@@ -17,3 +17,6 @@ EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0 --table
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0,1 --table name, author name with nolock hint and execute
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal'
+
+![image](https://user-images.githubusercontent.com/28916183/229113446-15958740-9aa1-40fe-8e5b-cf6f5d3b8bb2.png)
+
