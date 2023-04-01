@@ -14,7 +14,7 @@ EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal' -- table 
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',1 --table name, author name with nolock hint
 
-EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0,1 --table name, author name with nolock hint and execute
+EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',1,1 --table name, author name with nolock hint and execute
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal'
 
