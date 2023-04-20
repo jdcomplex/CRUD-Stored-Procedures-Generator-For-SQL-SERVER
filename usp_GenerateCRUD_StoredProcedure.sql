@@ -9,6 +9,9 @@ GO
 -- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0 --table name, author name with nolock hint
 -- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0,1 --table name, author name with nolock hint and execute
 -- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee_Temporal','Kamal Khanal'
+DROP PROCEDURE [dbo].[usp_GenerateCRUD]
+GO
+
 CREATE PROCEDURE [dbo].[usp_GenerateCRUD]
     @TableName NVARCHAR(256), --table name
     @AuthorName NVARCHAR(256), -- author name
@@ -224,11 +227,13 @@ BEGIN
 
     SELECT @GetSelect = COALESCE(@GetSelect + ',', '') + N'[' + COLUMN_NAME + N']'
     FROM #tmptablcol;
+
     SELECT @InsertSelect = COALESCE(@InsertSelect + ',', '') + N'[' + COLUMN_NAME + N']'
     FROM #tmptablcol
     WHERE is_identity = 0
           AND is_computed = 0
 		  AND generated_always_type=0
+
     SELECT @InsertSelectVal = COALESCE(@InsertSelectVal + ',', '') + N'@' + COLUMN_NAME
     FROM #tmptablcol
     WHERE is_identity = 0
@@ -247,6 +252,9 @@ BEGIN
 -- Description:	Add data to ' + +@InsertSelectblName + N'
 -- =============================================';
 
+    SELECT @insert_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Add' + @InsertSelectblName + N']
+GO'
     SELECT @insert_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Add' + @InsertSelectblName + N']
 ' +     @insertcolumn_sql + N',
@@ -272,6 +280,9 @@ GO
 -- Description:	update data to ' + +@InsertSelectblName + N'
 -- =============================================';
 
+    SELECT @update_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Update' + @InsertSelectblName + N']
+GO'
     SELECT @update_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Update' + @InsertSelectblName + N']
 ' +     IIF(@identity_col <> '', @UpdateSelectpdatecolumn_sql, '') + @insertcolumn_sql
@@ -301,6 +312,9 @@ GO
 -- =============================================';
 
     SELECT @select_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N']
+GO'
+    SELECT @select_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N']
 ' +     SUBSTRING(@UpdateSelectpdatecolumn_sql, 1, LEN(@UpdateSelectpdatecolumn_sql) - 1)
                           + N'    
@@ -321,6 +335,9 @@ GO
 -- Description:	Delete data from ' + +@InsertSelectblName + N'
 -- =============================================';
 
+    SELECT @delete_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Delete' + @InsertSelectblName + N']
+GO'
     SELECT @delete_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Delete' + @InsertSelectblName + N']
 ' +     SUBSTRING(@UpdateSelectpdatecolumn_sql, 1, LEN(@UpdateSelectpdatecolumn_sql) - 1)
@@ -349,6 +366,9 @@ GO
 -- Description:	Add Update data to ' + +@InsertSelectblName + N'
 -- =============================================';
 
+    SELECT @insertupdate_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_AddUpdate' + @InsertSelectblName + N']
+GO'
     SELECT @insertupdate_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_AddUpdate' + @InsertSelectblName + N']
 ' +     IIF(@identity_col <> '', @UpdateSelectpdatecolumn_sql, '') + @insertcolumn_sql
@@ -396,6 +416,9 @@ GO
                               + N' with pagination
 -- =============================================';
 
+    SELECT @selectlist_sql += N'
+DROP PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N'List]
+GO'
     SELECT @selectlist_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName
                               + N'List]
