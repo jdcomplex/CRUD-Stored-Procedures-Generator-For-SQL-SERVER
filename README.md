@@ -20,7 +20,7 @@ EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',0,1 -
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee_Temporal', '', 'Kamal Khanal'
 
-![image](https://user-images.githubusercontent.com/28916183/229113446-15958740-9aa1-40fe-8e5b-cf6f5d3b8bb2.png)
+![image](https://user-images.githubusercontent.com/28916183/233596325-bfe54956-9b40-4621-8461-ed78445fb35a.png)
 
 ![image](https://user-images.githubusercontent.com/28916183/233595809-741a5239-0051-4501-b87c-9afd4104948f.png)
 
