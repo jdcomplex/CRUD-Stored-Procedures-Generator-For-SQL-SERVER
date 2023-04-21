@@ -1,5 +1,5 @@
 # CRUD-Stored-Procedures-Generator-For-SQL-SERVER
-Generate create, read, update, delete stored procedure for table in SQL SEREVR.
+Generate create, read, update, delete stored procedure for single table/table with prefix/schema in SQL SEREVR.
 This stored procedure generate six stored procedure for specified table.
 Insert Only,
 Update Only,
