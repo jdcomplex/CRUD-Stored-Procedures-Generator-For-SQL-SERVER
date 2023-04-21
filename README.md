@@ -12,7 +12,7 @@ Examples
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','','Kamal Khanal' -- table name and author name
 
-EXEC [dbo].[usp_GenerateCRUD] '','HumanResources', 'Kamal Khanal' --table name, prefix and author name
+EXEC [dbo].[usp_GenerateCRUD] '','HumanResources', 'Kamal Khanal' --table name, prefix (all schema/table name start with HumanResources) and author name
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',1,0 --table name, prefix, author name with nolock hint
 
