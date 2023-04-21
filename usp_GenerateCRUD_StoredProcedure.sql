@@ -6,12 +6,18 @@ GO
 -- http://programerzone.blogspot.com
 -- ================================================
 -- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal' -- table name and author name
--- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0 --table name, author name with nolock hint
--- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','Kamal Khanal',0,1 --table name, author name with nolock hint and execute
--- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee_Temporal','Kamal Khanal'
+-- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','tbl_', 'Kamal Khanal' --table name, prefix and author name
+-- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',0 --table name, prefix, author name with nolock hint
+-- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',0,1 --table name, prefix, author name with nolock hint and execute
+-- EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee_Temporal', '', 'Kamal Khanal'
+
+DROP PROCEDURE IF EXISTS [dbo].[usp_GenerateCRUD]
+GO
+
 CREATE PROCEDURE [dbo].[usp_GenerateCRUD]
-    @TableName NVARCHAR(256), --table name
-    @AuthorName NVARCHAR(256), -- author name
+    @TableName NVARCHAR(256) = NULL, --table name
+    @Prefix NVARCHAR(5) = NULL, --table name
+    @AuthorName NVARCHAR(256) = '', -- author name
     @IsAddNoLockHint BIT = 1, -- add nolock hint to select default 1
     @IsExecute BIT = 0 -- execute or print only default 0
 AS
@@ -25,12 +31,9 @@ BEGIN
 
 '   ;
     DECLARE @SchemaName sysname = 'dbo',
-            @InsertSelectblName NVARCHAR(256),
+			@InsertSelectblName NVARCHAR(256),
             @NolockHint NVARCHAR(50) = N'';
 
-
-    IF (ISNULL(@TableName, '') <> '')
-    BEGIN
         IF CHARINDEX('.', @TableName) > 0
         BEGIN
             SET @SchemaName = REPLACE(REPLACE(SUBSTRING(@TableName, 0, CHARINDEX('.', @TableName)), '[', ''), ']', '');
@@ -44,24 +47,18 @@ BEGIN
         ELSE
             SET @TableName = REPLACE(REPLACE(@TableName, '[', ''), ']', '');
 
-    END;
-
-    IF NOT EXISTS
-    (
-        SELECT 1
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = @SchemaName
-              AND TABLE_NAME = @TableName
-    )
-    BEGIN
-        RAISERROR('Table may not exists.Please provide table name with schema name eg. schemaname.tablename', 16, 1);
-        RETURN;
-    END;
-
-    SELECT @InsertSelectblName = @TableName; --name of the table to generated crud script
-
     IF (@IsAddNoLockHint = 1)
         SET @NolockHint = N'(NOLOCK)';
+		
+	declare icursor cursor
+    for select [name] from sys.objects where type = 'u' and [name] <> 'sysdiagrams' and ([name] = @TableName or [name] like @Prefix + '%')
+	open icursor
+		fetch next from icursor into @TableName
+		while @@fetch_status = 0
+		begin
+		    -- begin loop tables
+
+	SELECT @InsertSelectblName = @TableName; --name of the table to generated crud script
 
     IF OBJECT_ID('tempdb..#tmptablcol') IS NOT NULL
         DROP TABLE #tmptablcol;
@@ -115,8 +112,7 @@ BEGIN
     DECLARE @IsNumeric BIT = 0;
 
     DECLARE db_cursor CURSOR FOR SELECT * FROM #tmptablcol;
-
-    OPEN db_cursor;
+	OPEN db_cursor;
     FETCH NEXT FROM db_cursor
     INTO @column_name,
          @data_type,
@@ -130,7 +126,6 @@ BEGIN
          @Nscale;
     WHILE @@FETCH_STATUS = 0
     BEGIN
-
         IF (@is_identity = 1)
         BEGIN
             SELECT @identity_col = @column_name,
@@ -212,10 +207,11 @@ BEGIN
              @scale,
              @NPRECISION,
              @Nscale;
-    END;
-    CLOSE db_cursor;
-    DEALLOCATE db_cursor;
-    SELECT @insertcolumn_sql = SUBSTRING(@insertcolumn_sql, 1, LEN(@insertcolumn_sql) - 1);
+	END
+    CLOSE db_cursor
+    DEALLOCATE db_cursor
+
+	SELECT @insertcolumn_sql = SUBSTRING(@insertcolumn_sql, 1, LEN(@insertcolumn_sql) - 1);
 
     DECLARE @GetSelect NVARCHAR(MAX);
     DECLARE @InsertSelect NVARCHAR(MAX);
@@ -224,11 +220,13 @@ BEGIN
 
     SELECT @GetSelect = COALESCE(@GetSelect + ',', '') + N'[' + COLUMN_NAME + N']'
     FROM #tmptablcol;
+
     SELECT @InsertSelect = COALESCE(@InsertSelect + ',', '') + N'[' + COLUMN_NAME + N']'
     FROM #tmptablcol
     WHERE is_identity = 0
           AND is_computed = 0
 		  AND generated_always_type=0
+
     SELECT @InsertSelectVal = COALESCE(@InsertSelectVal + ',', '') + N'@' + COLUMN_NAME
     FROM #tmptablcol
     WHERE is_identity = 0
@@ -248,6 +246,9 @@ BEGIN
 -- =============================================';
 
     SELECT @insert_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Add' + @InsertSelectblName + N']
+GO'
+    SELECT @insert_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Add' + @InsertSelectblName + N']
 ' +     @insertcolumn_sql + N',
 @Output INT OUTPUT 
@@ -256,13 +257,11 @@ BEGIN
        SET NOCOUNT ON;
        
        SELECT @Output = 0
-
        INSERT INTO ' + N'[' + @SchemaName + N'].[' + @InsertSelectblName + N']' + N'(' + @InsertSelect
                           + N')
        VALUES(' + @InsertSelectVal + N')' + N'
        IF @@ROWCOUNT>0
         SELECT @Output = 1
-
 END
 GO
 '   ;
@@ -273,6 +272,9 @@ GO
 -- =============================================';
 
     SELECT @update_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Update' + @InsertSelectblName + N']
+GO'
+    SELECT @update_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Update' + @InsertSelectblName + N']
 ' +     IIF(@identity_col <> '', @UpdateSelectpdatecolumn_sql, '') + @insertcolumn_sql
                           + N',
@@ -282,7 +284,6 @@ BEGIN
        SET NOCOUNT ON;
        
        SELECT @Output = 0
-
        UPDATE ' + N'[' + @SchemaName + N'].[' + @InsertSelectblName + N']' + N' SET ' + @UpdateSelect
                           + N'
        WHERE [' + @where_col + N'] =@' + @where_col
@@ -290,7 +291,6 @@ BEGIN
        
        IF @@ROWCOUNT>0
         SELECT @Output = 1
-
 END
 GO
 '   ;
@@ -301,17 +301,18 @@ GO
 -- =============================================';
 
     SELECT @select_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N']
+GO'
+    SELECT @select_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N']
 ' +     SUBSTRING(@UpdateSelectpdatecolumn_sql, 1, LEN(@UpdateSelectpdatecolumn_sql) - 1)
                           + N'    
 AS
 BEGIN
        SET NOCOUNT ON;
-
        SELECT ' + @GetSelect + N' FROM [' + @SchemaName + N'].[' + @InsertSelectblName + N']' + @NolockHint
                           + N'
        WHERE ([' + @where_col + N'] =@' + @where_col + N' OR @' + @where_col + N' IS NULL)' + N'
-
 END
 GO
 '   ;
@@ -322,6 +323,9 @@ GO
 -- =============================================';
 
     SELECT @delete_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_Delete' + @InsertSelectblName + N']
+GO'
+    SELECT @delete_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Delete' + @InsertSelectblName + N']
 ' +     SUBSTRING(@UpdateSelectpdatecolumn_sql, 1, LEN(@UpdateSelectpdatecolumn_sql) - 1)
                           + N',
@@ -331,14 +335,12 @@ BEGIN
        SET NOCOUNT ON;
        
        SELECT @Output = 0
-
        DELETE FROM ' + N'[' + @SchemaName + N'].[' + @InsertSelectblName + N']' + N'         
        WHERE [' + @where_col + N'] =@' + @where_col
                           + N'
        
        IF @@ROWCOUNT>0
         SELECT @Output = 1
-
 END
 GO
 '   ;
@@ -349,6 +351,9 @@ GO
 -- Description:	Add Update data to ' + +@InsertSelectblName + N'
 -- =============================================';
 
+    SELECT @insertupdate_sql += N'
+DROP PROCEDURE IF EXISTS [' + @SchemaName + N'].[usp_AddUpdate' + @InsertSelectblName + N']
+GO'
     SELECT @insertupdate_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_AddUpdate' + @InsertSelectblName + N']
 ' +     IIF(@identity_col <> '', @UpdateSelectpdatecolumn_sql, '') + @insertcolumn_sql
@@ -384,7 +389,6 @@ BEGIN
        	 SELECT @Output = 2
        	 
        END
-
 END
 GO
 '   ;
@@ -396,6 +400,9 @@ GO
                               + N' with pagination
 -- =============================================';
 
+    SELECT @selectlist_sql += N'
+DROP PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName + N'List]
+GO'
     SELECT @selectlist_sql += N'
 CREATE PROCEDURE [' + @SchemaName + N'].[usp_Get' + @InsertSelectblName
                               + N'List]
@@ -411,15 +418,16 @@ BEGIN
        SELECT @RowTotal = COUNT(1) FROM [' + @SchemaName + N'].[' + @InsertSelectblName + N']' + @NolockHint
                               + N' 
        -- WHERE extra condition here
-
        SELECT @RowTotal AS RowTotal, ' + @GetSelect + N' FROM [' + @SchemaName + N'].[' + @InsertSelectblName + N']'
                               + @NolockHint + N'
         -- WHERE extra condition here
        ORDER BY [' + @where_col + N'] OFFSET (@offset-1) ROWS FETCH NEXT @limit ROWS ONLY 
 
+
 END
 GO
 '   ;
+
     IF (@IsExecute = 1)
     BEGIN
         EXEC (@insert_sql);
@@ -438,7 +446,11 @@ GO
         PRINT @insertupdate_sql;
         PRINT @selectlist_sql;
     END;
-END;
 
-
+-- end loop tables
+			fetch next from icursor into @TableName
+		end
+    CLOSE icursor
+    DEALLOCATE icursor
+END
 GO
