@@ -55,9 +55,10 @@ BEGIN
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA = @SchemaName
               AND TABLE_NAME = @TableName
+			  AND TABLE_NAME <> 'sysdiagrams'
     )
     BEGIN
-        RAISERROR('Table may not exists.Please provide table name with schema name eg. schemaname.tablename', 16, 1);
+        RAISERROR('Table may not exists. Please provide table name with schema name eg. schemaname.tablename', 16, 1);
         RETURN;
     END;
 
