@@ -14,7 +14,7 @@ EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','','Kamal Khanal' -- tab
 
 EXEC [dbo].[usp_GenerateCRUD] '','HumanResources', 'Kamal Khanal' --table name, prefix (all schema/table name start with HumanResources) and author name
 
-EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',1,0 --table name, prefix, author name with nolock hint
+EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',1 --table name, prefix, author name with nolock hint
 
 EXEC [dbo].[usp_GenerateCRUD] 'HumanResources.Employee','', 'Kamal Khanal',0,1 --table name, prefix, author name and execute
 
